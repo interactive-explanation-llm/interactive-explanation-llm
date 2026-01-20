@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Problem Solver Interface</title>
+<style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 800px;
+            border: 1px solid #ddd;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .left-panel {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #ddd;
+        }
+
+        .right-panel {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .problem-statement, .problem-understanding {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .problem-statement {
+            height: 50%;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .problem-understanding {
+            height: 50%;
+        }
+        
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+            display: inline-block;
+        }
+
+        .debugger-controls {
+            display: flex;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-play-pause {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .btn-stop {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-prev, .btn-next {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn i {
+            margin-right: 5px;
+        }
+
+        .explanation-container {
+            border: 1px solid #ddd;
+            margin: 10px;
+            border-radius: 4px;
+        }
+
+        .explanation-container {
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .highlight {
+            padding: 0 3px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .step {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            border-left: 3px solid gray;
+            transition: background-color 0.2s;
+        }
+
+        .step:hover {
+            background-color: #f0f0f0;
+        }
+
+        .step.active {
+            background-color: #fffacd;
+            border-left: 3px solid #ffd700;
+        }
+        .formula {
+            font-weight: bold;
+            margin: 5px 0;
+            display: inline;
+        }
+
+        .explanation-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .step-content {
+            margin-left: 15px;
+        }
+
+        .disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .wrong-step {
+            display: none;
+        }
+
+        /* Variable colors */
+        .var-width-tiles {
+            background-color: rgba(255, 99, 71, 0.5);
+        }
+        .var-length-tiles {
+            background-color: rgba(135, 206, 250, 0.5);
+        }
+        .var-width-inches {
+            background-color: rgba(144, 238, 144, 0.5);
+        }
+        .var-width-feet {
+            background-color: rgba(255, 165, 0, 0.5);
+        }
+        .var-length-inches {
+            background-color: rgba(221, 160, 221, 0.5);
+        }
+        .var-length-feet {
+            background-color: rgba(255, 215, 0, 0.5);
+        }
+        .var-bathroom-area {
+            background-color: rgba(70, 130, 180, 0.5);
+        }
+        /* layout tweak: 40 / 60 split */
+        .left-panel { display: none !important; }
+        .right-panel{ width:100% !important; }
+        /* hide “Variables” pane */
+        .variables-container{display:none!important}
+        .explanation-container{flex:1!important;height:auto!important}
+        /* numbered badge next to each step */
+        .step{display:none;align-items:center;gap:12px}
+        .step.shown{display:flex}
+        .step-content,.step>*:first-child{flex:1}
+        .badge{
+        flex-shrink:0;color:#adadad;font-size:1.7rem;
+        font-weight:700;padding:4px 14px;border-radius:16px;pointer-events:none;
+        }
+        /* ── eliminate blank space in Problem Statement ──────────────────── */
+        .problem-statement{
+        /* let the section size itself */
+        height:auto!important;           /* overrides 50 % */
+        flex:0 0 auto!important;         /* occupy only the space it needs */
+        padding:20px!important;          /* keep your original insets */
+        overflow-y:visible!important;    /* scroll not usually needed here */
+        }
+        .problem-understanding{
+        /* fill everything that’s left */
+        flex:1 1 auto!important;         /* grow/shrink with column */
+        height:auto!important;           /* overrides 50 % */
+        overflow-y:auto!important;       /* still scroll if content is long */
+        }
+        /* tidy up internal spacing */
+        .problem-statement p{
+        margin:0!important;
+        line-height:1.4!important;
+        }
+        .section-title{
+        margin-bottom:8px!important;
+        padding-bottom:3px!important;
+        }
+        /* ── eliminate per‑line margins in the Summary panel ─────────────── */
+        .problem-understanding .variable-item,
+        .problem-understanding p,
+        .problem-understanding li {
+            margin: 0 !important;      /* no extra vertical gap */
+            padding: 0 !important;     /* align text to the left edge */
+        }
+        /* ── make every control button solid black ── */
+        .btn,
+        .btn-play-pause,
+        .btn-stop,
+        .btn-prev,
+        .btn-next,
+        .btn-correct,
+        .btn-wrong{
+            background: #000 !important;   /* black fill */
+            color: #fff !important;        /* white text so it stays readable */
+            border: none !important;       /* ensure no colored borders peek through */
+        }
+        .btn:hover {                       /* keep hover subtle */
+            opacity: 0.9 !important;
+        }
+        /* if you dim disabled buttons, keep them grey */
+        .btn.disabled {
+            background: #6c6c6c !important;
+            color: #fff !important;
+        }
+        /* Natural‑language & graph explanations (.step.active) */
+        .step.active             {                    /* remove yellow fill   */
+        background: transparent !important;
+        border: 2px solid #ffd700 !important;          /* gold border          */
+        padding-left: 10px !important;                 /* keep text indented   */
+        }
+        .code-line.current      {
+            background: transparent !important;
+            border: 2px solid #ffd700 !important;
+            padding-left: 8px !important;
+        }
+        .step.active::before { display: none !important; } /* hide blinking dot */
+        /* disable clicking */
+        .step{
+        pointer-events:none !important;   /* clicks, hovers, etc. are ignored   */
+        cursor: default !important;       /* arrow cursor instead of pointer    */
+        }
+        /* Do not bold the formula*/
+        .formula {
+            font-weight: normal;
+            margin: 5px 0;
+            }
+    </style>
+    </head>
+    <body>
+    <div class="wrong-step">0</div>
+    <div class="container">
+        <div class="left-panel">
+            <div class="problem-statement">
+                <div class="section-title">Problem Statement</div>
+                <p>A bathroom has 
+                    <span id="fact1"><span class="highlight var-width-tiles">10 6 inch tiles along its width</span></span> and 
+                    <span id="fact2"><span class="highlight var-length-tiles">20 6 inch tiles along its length</span></span>. 
+                    What is the square footage of the bathroom?
+                </p>
+            </div>
+            <div class="problem-understanding">
+                <div class="section-title">Problem Understanding</div>
+                <p><span class="highlight var-width-tiles">Width tiles: 10 tiles of 6 inches each</span></p>
+                <p><span class="highlight var-length-tiles">Length tiles: 20 tiles of 6 inches each</span></p>
+                <h3>What we need to find</h3>
+                <p>The square footage of the bathroom.</p>
+            </div>
+        </div>
+        <div class="right-panel">
+            <div class="debugger-controls">
+                <button class="btn btn-play-pause" id="playPauseBtn">▶ Play</button>
+                <button class="btn btn-stop" id="stopBtn">■ Stop</button>
+                <button class="btn btn-prev" id="prevBtn">⤴ Previous Step</button>
+                <button class="btn btn-next" id="nextBtn">⤵ Next Step</button>
+            </div>
+            <div class="explanation-container" id="explanationContainer">
+                <div class="explanation-title">Step-by-Step Explanation</div>
+                <div class="step" id="step1">
+                    <div class="step-content">
+                    Calculate the total width of the bathroom in inches: <div class="formula">number of tiles × tile length</div> = <span class="highlight var-width-tiles">10</span> * <span class="highlight var-width-tiles">6</span> = <span class="highlight var-width-inches">60 inches</span>
+                    </div>
+                </div>
+                <div class="step" id="step2">
+                    <div class="step-content">
+                    Convert the width from inches to feet: <div class="formula">width in inches ÷ 12</div> = <span class="highlight var-width-inches">60</span> / 12 = <span class="highlight var-width-feet">5 feet</span>
+                    </div>
+                </div>
+                <div class="step" id="step3">
+                    <div class="step-content">
+                    Calculate the total length of the bathroom in inches: <div class="formula">number of tiles × tile length</div> = <span class="highlight var-length-tiles">20</span> * <span class="highlight var-length-tiles">6</span> = <span class="highlight var-length-inches">120 inches</span>
+                    </div>
+                </div>
+                <div class="step" id="step4">
+                    <div class="step-content">
+                    Convert the length from inches to feet: <div class="formula">length in inches ÷ 12</div> = <span class="highlight var-length-inches">120</span> / 12 = <span class="highlight var-length-feet">10 feet</span>
+                    </div>
+                </div>
+                <div class="step" id="step5">
+                    <div class="step-content">
+                    Calculate the square footage of the bathroom: <div class="formula">length × width</div> = <span class="highlight var-length-feet">10</span> * <span class="highlight var-width-feet">5</span> = <span class="highlight var-bathroom-area">50 sq feet</span>
+                    </div>
+                </div>
+                <div class="step final-answer"><div class="step-content"><strong>Final Answer:</strong> <span class="highlight var-bathroom-area">50</span></div></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elements
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const steps = [...document.querySelectorAll('.step')];
+            const explanationContainer = document.getElementById('explanationContainer');
+            const wrongStepIndex = parseInt(document.querySelector('.wrong-step').textContent) - 1;
+            
+            // State
+            let currentStepIndex = -1;
+            let isPlaying = false;
+            let playInterval = null;
+            let breakpointStep = null;
+            
+            // Initial state
+            prevBtn.classList.add('disabled');
+
+            // Functions
+            function highlightStep(index) {
+                // Remove active class from all steps
+                steps.forEach(step => step.classList.remove('active'));
+                
+                if (index >= 0 && index < steps.length) {
+                    // Add active class to current step
+                    steps[index].classList.add('active');
+                
+                    // Update button states
+                    prevBtn.classList.toggle('disabled', index === 0);
+                    nextBtn.classList.toggle('disabled', index === steps.length - 1);
+                    
+                    // Update current step index
+                    currentStepIndex = index;
+                    
+                    // Auto-scroll to the active step
+                    if (explanationContainer) {
+                        setTimeout(() => {
+                            const activeStep = steps[index];
+                            if (activeStep) {
+                                const stepTop = activeStep.offsetTop;
+                                const containerHeight = explanationContainer.clientHeight;
+                                const stepHeight = activeStep.clientHeight;
+                                const scrollPosition = stepTop - (containerHeight / 2) + (stepHeight / 2);
+                                explanationContainer.scrollTo({
+                                    top: Math.max(0, scrollPosition),
+                                    behavior: 'smooth'
+                                });
+                            }
+                        }, 100);
+                    }
+                }
+            }
+            
+            
+            function playExplanation() {
+                if (currentStepIndex >= steps.length - 1) {
+                    // Already at the end, do nothing
+                    return;
+                }
+                
+                isPlaying = true;
+                playPauseBtn.innerHTML = '❚❚ Pause';
+                
+                // Clear any existing interval
+                clearInterval(playInterval);
+                
+                // Start playing from next step
+                playInterval = setInterval(() => {
+                    const nextIndex = currentStepIndex + 1;
+                    
+                    if (nextIndex < steps.length) {
+                        highlightStep(nextIndex);
+                        
+                    } else {
+                        // End of steps, pause
+                        pauseExplanation();
+                    }
+                }, 1500);
+            }
+            
+            function pauseExplanation() {
+                isPlaying = false;
+                playPauseBtn.innerHTML = '▶ Play';
+                clearInterval(playInterval);
+            }
+            
+            function stopExplanation() {
+                pauseExplanation();
+                steps.forEach(step => step.classList.remove('active'));
+                currentStepIndex = -1;
+                prevBtn.classList.add('disabled');
+                nextBtn.classList.remove('disabled');
+                
+                // Clear variables
+                variableList.innerHTML = '';
+            }
+            
+            function nextStep() {
+                if (currentStepIndex < steps.length - 1) {
+                    highlightStep(currentStepIndex + 1);
+                }
+            }
+            
+            function prevStep() {
+                if (currentStepIndex > 0) {
+                    highlightStep(currentStepIndex - 1);
+                }
+            }
+            
+            // Event Listeners
+            playPauseBtn.addEventListener('click', function() {
+                if (isPlaying) {
+                    pauseExplanation();
+                } else {
+                    playExplanation();
+                }
+            });
+            
+            stopBtn.addEventListener('click', stopExplanation);
+            
+            prevBtn.addEventListener('click', function() {
+                if (!prevBtn.classList.contains('disabled')) {
+                    prevStep();
+                }
+            });
+            
+            nextBtn.addEventListener('click', function() {
+                if (!nextBtn.classList.contains('disabled')) {
+                    nextStep();
+                }
+            });
+
+
+            
+            
+            /* 4. decorate & reveal steps */
+            steps.forEach((s, i) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'step-content';
+                while (s.firstChild) wrap.appendChild(s.firstChild);
+                s.appendChild(wrap);
+            
+                // Add badge for all steps except the last one
+                if (i < steps.length - 1) {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge';
+                    badge.textContent = '' + (i + 1);
+                    s.appendChild(badge);
+                }
+            });
+            if (steps.length) {
+                steps[0].classList.add('active', 'shown');
+                window.currentStepIndex = 0;
+            }
+
+            /* 2. rename headings */
+            const h = document.querySelector('.problem-understanding .section-title');
+            if (h) h.textContent = 'Summary';
+            const q = document.querySelector('.problem-statement .section-title');
+            if (q) q.textContent = 'Question';
+            
+
+            /* 3. “Goal” wording */
+            // Case 1: <div class="what-to-find"><h4>...</h4>
+            const goalH4 = document.querySelector('.what-to-find h4');
+            if (goalH4) {
+            goalH4.textContent = 'Goal:';
+            }
+            
+            // Case 2: standalone <h3>What we need to find
+            const goalH3 = document.querySelector('.problem-understanding h3');
+            if (goalH3 && /what we need to find/i.test(goalH3.textContent)) {
+            goalH3.textContent = 'Goal:';
+            }
+
+             /* cumulative reveal on highlight change */
+            const sync = ()=>{
+            const idx=steps.findIndex(el=>el.classList.contains('active'));
+            steps.forEach((el,i)=>el.classList.toggle('shown',i<=idx));
+            };
+            sync();
+            const obs=new MutationObserver(sync);
+            steps.forEach(el=>obs.observe(el,{attributes:true,attributeFilter:['class']}));
+            
+            /* click telemetry */
+            const post = key => window.parent?.postMessage({type:'xai-click',key},'*');
+            const map  = {playPauseBtn:'play',stopBtn:'stop',nextBtn:'next',prevBtn:'prev'};
+            Object.entries(map).forEach(([id,key])=>{
+            const btn=document.getElementById(id);
+            if (btn) btn.addEventListener('click',()=>post(key),{capture:true});
+            });
+            /*  Number only executable lines (i.e. lines *without* the .comment span). */
+            (function renumberCodeLines(){
+            const codeLines = document.querySelectorAll('.code-line');
+            let n = 0;
+            codeLines.forEach(cl=>{
+            const numSpan = cl.querySelector('.line-number');
+            if(!numSpan) return;                        // safety check
+            if(cl.querySelector('.comment')){           // comment line
+                numSpan.textContent = '';                 // blank → hides via :empty
+            }else{                                      // real code
+                numSpan.textContent = ++n;
+            }
+            });
+            })();
+            
+        });
+    </script>
+</body>
+</html>

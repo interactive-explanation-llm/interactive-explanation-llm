@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Problem-Solving Interface</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 800px;
+            border: 1px solid #ddd;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .left-panel {
+            width: 40%;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #ddd;
+        }
+
+        .right-panel {
+            width: 60%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .problem-statement, .problem-understanding {
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .problem-statement {
+            height: 50%;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .problem-understanding {
+            height: 50%;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+            display: inline-block;
+        }
+
+        .debugger-controls {
+            display: flex;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            gap: 5px;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover:not(.disabled) {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-play-pause {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .btn-stop {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-prev, .btn-next {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .python-solution {
+            height: 400px;
+            border: 1px solid #ddd;
+            margin: 10px;
+            border-radius: 4px;
+            overflow: hidden;
+            background-color: #ffffff;
+            color: #333333;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        .python-code {
+            padding: 15px;
+            height: calc(100% - 50px);
+            overflow-y: auto;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .code-line {
+            display: flex;
+            align-items: center;
+            padding: 4px 0;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .code-line.current {
+            background-color: #ffeb3b;
+            color: #000;
+            padding-left: 8px;
+        }
+
+        .line-number {
+            color: #888;
+            font-size: 12px;
+            min-width: 20px;
+            text-align: right;
+            margin-right: 15px;
+        }
+
+        .comment {
+            color: #347778;
+        }
+
+        .variables-display {
+            height: 300px;
+            border: 1px solid #ddd;
+            margin: 10px;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .variable-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+            font-weight: 500;
+        }
+
+        .variable-name {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        .variable-value {
+            font-weight: 600;
+        }
+
+        .fact1-color { background-color: rgba(255, 99, 71, 0.5); }
+        .fact2-color { background-color: rgba(135, 206, 250, 0.5); }
+        .var1-color { background-color: rgba(144, 238, 144, 0.5); }
+        .var2-color { background-color: rgba(255, 165, 0, 0.5); }
+        .var3-color { background-color: rgba(211, 160, 211, 0.5); }
+        .var4-color { background-color: rgba(255, 217, 0, 0.5); }
+        .var5-color { background-color: rgba(70, 130, 180, 0.5); }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 12px;
+        }
+
+        .what-to-find {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f4fd;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+        }
+
+        .what-to-find h4 {
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        .wrong-step {
+            display: none;
+        }
+        /* layout tweak: 40 / 60 split */
+        .left-panel { display: none !important; }
+        .right-panel{ width:100% !important; }
+        /* hide “Variables” pane */
+        .variables-container{display:none!important}
+        .explanation-container{flex:1!important;height:auto!important}
+        /* numbered badge next to each step */
+        .step{display:none;align-items:center;gap:12px}
+        .step.shown{display:flex}
+        .step-content,.step>*:first-child{flex:1}
+        .badge{
+        flex-shrink:0;color:#adadad;font-size:1.7rem;
+        font-weight:700;padding:4px 14px;border-radius:16px;pointer-events:none;
+        }
+        /* ── eliminate blank space in Problem Statement ──────────────────── */
+        .problem-statement{
+        /* let the section size itself */
+        height:auto!important;           /* overrides 50 % */
+        flex:0 0 auto!important;         /* occupy only the space it needs */
+        padding:20px!important;          /* keep your original insets */
+        overflow-y:visible!important;    /* scroll not usually needed here */
+        }
+        .problem-understanding{
+        /* fill everything that’s left */
+        flex:1 1 auto!important;         /* grow/shrink with column */
+        height:auto!important;           /* overrides 50 % */
+        overflow-y:auto!important;       /* still scroll if content is long */
+        }
+        /* tidy up internal spacing */
+        .problem-statement p{
+        margin:0!important;
+        line-height:1.4!important;
+        }
+        .section-title{
+        margin-bottom:8px!important;
+        padding-bottom:3px!important;
+        }
+        /* ── eliminate per‑line margins in the Summary panel ─────────────── */
+        .problem-understanding .variable-item,
+        .problem-understanding p,
+        .problem-understanding li {
+            margin: 0 !important;      /* no extra vertical gap */
+            padding: 0 !important;     /* align text to the left edge */
+        }
+        /* ── make every control button solid black ── */
+        .btn,
+        .btn-play-pause,
+        .btn-stop,
+        .btn-prev,
+        .btn-next,
+        .btn-correct,
+        .btn-wrong{
+            background: #000 !important;   /* black fill */
+            color: #fff !important;        /* white text so it stays readable */
+            border: none !important;       /* ensure no colored borders peek through */
+        }
+        .btn:hover {                       /* keep hover subtle */
+            opacity: 0.9 !important;
+        }
+        /* if you dim disabled buttons, keep them grey */
+        .btn.disabled {
+            background: #6c6c6c !important;
+            color: #fff !important;
+        }
+        /* Natural‑language & graph explanations (.step.active) */
+        .step.active             {                    /* remove yellow fill   */
+        background: transparent !important;
+        border: 2px solid #ffd700 !important;          /* gold border          */
+        padding-left: 10px !important;                 /* keep text indented   */
+        }
+        .code-line.current      {
+            background: transparent !important;
+            border: 2px solid #ffd700 !important;
+            padding-left: 8px !important;
+        }
+        .step.active::before { display: none !important; } /* hide blinking dot */
+        /* disable clicking */
+        .step{
+        pointer-events:none !important;   /* clicks, hovers, etc. are ignored   */
+        cursor: default !important;       /* arrow cursor instead of pointer    */
+        }
+        /* Do not bold the formula*/
+        .formula {
+            font-weight: normal;
+            margin: 5px 0;
+            }
+
+    </style>
+</head>
+<body>
+    <div class="wrong-step">0</div>
+    <div class="container">
+        <div class="left-panel">
+            <div class="problem-statement">
+                <div class="section-title">Question</div>
+                <p>
+                    A bathroom has <span id="fact1" class="fact1-color">10 6 inch tiles along its width</span> and <span id="fact2" class="fact2-color">20 6 inch tiles along its length</span>. What is the square footage of the bathroom?
+                </p>
+            </div>
+            <div class="problem-understanding">
+                <div class="section-title">Summary</div>
+                <ul>
+                    <li><span class="fact1-color">Width tiles: 10 tiles of 6 inches each</span></li>
+                    <li><span class="fact2-color">Length tiles: 20 tiles of 6 inches each</span></li>
+                </ul>
+                <div class="what-to-find">
+                    <h4>Goal</h4>
+                    <p>Calculate the square footage of the bathroom.</p>
+                </div>
+            </div>
+        </div>
+        <div class="right-panel">
+            <div class="debugger-controls">
+                <button id="playPauseBtn" class="btn btn-play-pause">▶ Play</button>
+                <button id="stopBtn" class="btn btn-stop">■ Stop</button>
+                <button id="prevBtn" class="btn btn-prev">⤴ Previous Step</button>
+                <button id="nextBtn" class="btn btn-next">⤵ Next Step</button>
+            </div>
+            <div class="python-solution">
+                <div class="section-title" style="color: #333333; padding: 15px 15px 0; margin: 0;">Python Solution</div>
+                <div class="python-code" id="python-code">
+                    <div class="code-line" data-step="0">
+                        <span class="line-number">1</span>
+                        <span class="comment"># Calculate the total width of the bathroom in inches</span>
+                    </div>
+                    <div class="code-line" data-step="1">
+                        <span class="line-number">2</span>
+                        <span><span class="var1-color">width_inches</span> = <span class="fact1-color">10</span> * 6</span>
+                    </div>
+                    <div class="code-line" data-step="2">
+                        <span class="line-number">3</span>
+                        <span class="comment"># Convert the width from inches to feet</span>
+                    </div>
+                    <div class="code-line" data-step="3">
+                        <span class="line-number">4</span>
+                        <span><span class="var2-color">width_feet</span> = <span class="var1-color">width_inches</span> / 12</span>
+                    </div>
+                    <div class="code-line" data-step="4">
+                        <span class="line-number">5</span>
+                        <span class="comment"># Calculate the total length of the bathroom in inches</span>
+                    </div>
+                    <div class="code-line" data-step="5">
+                        <span class="line-number">6</span>
+                        <span><span class="var3-color">length_inches</span> = <span class="fact2-color">20</span> * 6</span>
+                    </div>
+                    <div class="code-line" data-step="6">
+                        <span class="line-number">7</span>
+                        <span class="comment"># Convert the length from inches to feet</span>
+                    </div>
+                    <div class="code-line" data-step="7">
+                        <span class="line-number">8</span>
+                        <span><span class="var4-color">length_feet</span> = <span class="var3-color">length_inches</span> / 12</span>
+                    </div>
+                    <div class="code-line" data-step="8">
+                        <span class="line-number">9</span>
+                        <span class="comment"># Calculate the square footage of the bathroom</span>
+                    </div>
+                    <div class="code-line" data-step="9">
+                        <span class="line-number">10</span>
+                        <span><span class="var5-color">bathroom_area</span> = <span class="var4-color">length_feet</span> * <span class="var2-color">width_feet</span></span>
+                    </div>
+                </div>
+            </div>
+            <div class="variables-display" id="variables-display">
+                <div class="section-title" style="margin-bottom: 15px;">Variables</div>
+                <div id="variables-list">
+                    <div class="variable-item">
+                        <span class="variable-name">No variables initialized yet</span>
+                        <span class="variable-value">Run the code to see variables</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class PythonDebugger {
+            constructor() {
+                this.currentStep = -1;
+                this.isPlaying = false;
+                this.playInterval = null;
+                this.totalSteps = 9;
+                this.variables = {};
+                
+                this.initializeElements();
+                this.bindEvents();
+                this.updateUI();
+            }
+
+            initializeElements() {
+                this.playPauseBtn = document.getElementById('playPauseBtn');
+                this.stopBtn = document.getElementById('stopBtn');
+                this.prevBtn = document.getElementById('prevBtn');
+                this.nextBtn = document.getElementById('nextBtn');
+                this.codeLines = document.querySelectorAll('.code-line');
+                this.variablesDisplay = document.getElementById('variables-list');
+            }
+
+            bindEvents() {
+                this.playPauseBtn.addEventListener('click', () => this.togglePlay());
+                this.stopBtn.addEventListener('click', () => this.stop());
+                this.prevBtn.addEventListener('click', () => this.previousStep());
+                this.nextBtn.addEventListener('click', () => this.nextStep());
+            }
+
+            togglePlay() {
+                if (this.isPlaying) {
+                    this.pause();
+                } else {
+                    this.play();
+                }
+            }
+
+            play() {
+                this.isPlaying = true;
+                this.playPauseBtn.innerHTML = '❚❚ Pause';
+                
+                if (this.currentStep >= this.totalSteps) {
+                    // Already at the end, do nothing
+                    this.isPlaying = false;
+                    this.playPauseBtn.innerHTML = '▶ Play';
+                    return;
+                }
+                
+                this.playInterval = setInterval(() => {
+                    if (this.currentStep < this.totalSteps) {
+                        this.currentStep++;
+                        this.executeStep(this.currentStep);
+                        this.updateUI();
+                    } else {
+                        this.pause();
+                    }
+                }, 1500);
+            }
+
+            pause() {
+                this.isPlaying = false;
+                this.playPauseBtn.innerHTML = '▶ Play';
+                if (this.playInterval) {
+                    clearInterval(this.playInterval);
+                    this.playInterval = null;
+                }
+            }
+
+            stop() {
+                this.pause();
+                this.currentStep = -1;
+                this.variables = {};
+                this.updateUI();
+            }
+
+            nextStep() {
+                if (this.currentStep < this.totalSteps) {
+                    this.currentStep++;
+                    this.executeStep(this.currentStep);
+                    this.updateUI();
+                }
+            }
+
+            previousStep() {
+                if (this.currentStep > 0) {
+                    this.currentStep--;
+                    this.recalculateVariables();
+                    this.updateUI();
+                } else if (this.currentStep === 0) {
+                    this.currentStep = -1;
+                    this.variables = {};
+                    this.updateUI();
+                }
+            }
+            
+            executeStep(step) {
+                switch(step) {
+                    case 1:
+                        this.variables.width_inches = 10 * 6;
+                        break;
+                    case 3:
+                        this.variables.width_feet = this.variables.width_inches / 12;
+                        break;
+                    case 5:
+                        this.variables.length_inches = 20 * 6;
+                        break;
+                    case 7:
+                        this.variables.length_feet = this.variables.length_inches / 12;
+                        break;
+                    case 9:
+                        this.variables.bathroom_area = this.variables.length_feet * this.variables.width_feet;
+                        break;
+                }
+            }
+
+            recalculateVariables() {
+                this.variables = {};
+                for (let i = 1; i <= this.currentStep; i += 2) {
+                    this.executeStep(i);
+                }
+            }
+
+            updateUI() {
+                // Update code highlighting
+                this.codeLines.forEach((line, index) => {
+                    line.classList.toggle('current', index === this.currentStep);
+                });
+
+                // Update button states
+                this.prevBtn.classList.toggle('disabled', this.currentStep === -1);
+                this.nextBtn.classList.toggle('disabled', this.currentStep === this.totalSteps);
+
+                // Update variables display
+                this.updateVariablesDisplay();
+            }
+
+            updateVariablesDisplay() {
+                if (Object.keys(this.variables).length === 0) {
+                    this.variablesDisplay.innerHTML = `
+                        <div class="variable-item">
+                            <span class="variable-name">No variables initialized yet</span>
+                            <span class="variable-value">Run the code to see variables</span>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '';
+                const variableOrder = ['width_inches', 'width_feet', 'length_inches', 'length_feet', 'bathroom_area'];
+                
+                variableOrder.forEach(varName => {
+                    if (this.variables.hasOwnProperty(varName)) {
+                        const value = this.variables[varName];
+                        const colorClass = this.getVariableColorClass(varName);
+                        const displayValue = varName === 'bathroom_area' ? `${value} sq feet` : 
+                                           (varName.includes('feet') ? `${value} feet` : `${value} inches`);
+                        if(varName == 'bathroom_area'){
+                           html += `
+                            <div class="variable-item ${colorClass}">
+                                <span class="variable-name">${varName} (final answer)</span>
+                                <span class="variable-value">${displayValue}</span>
+                            </div>
+                        `; 
+                        }
+                        
+                       else{
+                        html += `
+                            <div class="variable-item ${colorClass}">
+                                <span class="variable-name">${varName}</span>
+                                <span class="variable-value">${displayValue}</span>
+                            </div>
+                        `;
+                       } 
+                    }
+                });
+
+                this.variablesDisplay.innerHTML = html;
+            }
+            
+            getVariableColorClass(varName) {
+                const colorMap = {
+                    'width_inches': 'var1-color',
+                    'width_feet': 'var2-color',
+                    'length_inches': 'var3-color',
+                    'length_feet': 'var4-color',
+                    'bathroom_area': 'var5-color'
+                };
+                return colorMap[varName] || '';
+            }
+        }
+
+        // Initialize the debugger when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new PythonDebugger();
+            /* 4. decorate & reveal steps */
+            steps.forEach((s, i) => {
+                const wrap = document.createElement('div');
+                wrap.className = 'step-content';
+                while (s.firstChild) wrap.appendChild(s.firstChild);
+                s.appendChild(wrap);
+            
+                // Add badge for all steps except the last one
+                if (i < steps.length - 1) {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge';
+                    badge.textContent = '' + (i + 1);
+                    s.appendChild(badge);
+                }
+            });
+            if (steps.length) {
+                steps[0].classList.add('active', 'shown');
+                window.currentStepIndex = 0;
+            }
+
+            /* 2. rename headings */
+            const h = document.querySelector('.problem-understanding .section-title');
+            if (h) h.textContent = 'Summary';
+            const q = document.querySelector('.problem-statement .section-title');
+            if (q) q.textContent = 'Question';
+            
+
+            /* 3. “Goal” wording */
+            // Case 1: <div class="what-to-find"><h4>...</h4>
+            const goalH4 = document.querySelector('.what-to-find h4');
+            if (goalH4) {
+            goalH4.textContent = 'Goal:';
+            }
+            
+            // Case 2: standalone <h3>What we need to find
+            const goalH3 = document.querySelector('.problem-understanding h3');
+            if (goalH3 && /what we need to find/i.test(goalH3.textContent)) {
+            goalH3.textContent = 'Goal:';
+            }
+
+             /* cumulative reveal on highlight change */
+            const sync = ()=>{
+            const idx=steps.findIndex(el=>el.classList.contains('active'));
+            steps.forEach((el,i)=>el.classList.toggle('shown',i<=idx));
+            };
+            sync();
+            const obs=new MutationObserver(sync);
+            steps.forEach(el=>obs.observe(el,{attributes:true,attributeFilter:['class']}));
+            
+            /* click telemetry */
+            const post = key => window.parent?.postMessage({type:'xai-click',key},'*');
+            const map  = {playPauseBtn:'play',stopBtn:'stop',nextBtn:'next',prevBtn:'prev'};
+            Object.entries(map).forEach(([id,key])=>{
+            const btn=document.getElementById(id);
+            if (btn) btn.addEventListener('click',()=>post(key),{capture:true});
+            });
+            /*  Number only executable lines (i.e. lines *without* the .comment span). */
+            (function renumberCodeLines(){
+            const codeLines = document.querySelectorAll('.code-line');
+            let n = 0;
+            codeLines.forEach(cl=>{
+            const numSpan = cl.querySelector('.line-number');
+            if(!numSpan) return;                        // safety check
+            if(cl.querySelector('.comment')){           // comment line
+                numSpan.textContent = '';                 // blank → hides via :empty
+            }else{                                      // real code
+                numSpan.textContent = ++n;
+            }
+            });
+            })();
+        });
+    </script>
+</body>
+</html>
